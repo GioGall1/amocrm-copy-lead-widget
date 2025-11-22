@@ -205,19 +205,35 @@ define(['jquery'], function ($) {
 				});
 
 				$('.copy-lead__button').on('click', function () {
-					if (!$(this).hasClass('copy-lead__button_disable')) return;
+					if ($(this).hasClass('copy-lead__button_disable')) return;
 
 						let pipeline_id = Number($('.copy-lead [name="select-pipeline"]').val()),
 							status_id = Number($('.copy-lead [name="select-status"]').val()),
 							lead_id = APP.data.current_card.id;
 
-						$('copy-lead__info')
+						$('.copy-lead__info')
 							.removeClass('copy-lead__info_error copy-lead__info_success')
 							.addClass('copy-lead__info_load')
 							.text('Копирование...');
 						
 					
 				});
+
+				function getLead(lead_id) {
+					return new Promise((resolve, reject) => {
+						$.ajax({
+							method: 'GET',
+							url: '/api/v4/leads/' + lead_id + '?with=contacts',
+							dataType: 'json',
+							success: function(data) {
+								resolve(data);
+							},
+							error: function(xhr) {
+								reject(xhr);
+							}
+						});
+					});
+				}
 
 				$('.js-copy-lead img').remove();
 				$('.js-copy-lead span').first().after('\
