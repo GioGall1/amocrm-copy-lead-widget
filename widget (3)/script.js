@@ -205,24 +205,18 @@ define(['jquery'], function ($) {
 				});
 
 				$('.copy-lead__button').on('click', function () {
-					if (!$(this).hasClass('copy-lead__button_disable')) {
+					if (!$(this).hasClass('copy-lead__button_disable')) return;
+
 						let pipeline_id = Number($('.copy-lead [name="select-pipeline"]').val()),
 							status_id = Number($('.copy-lead [name="select-status"]').val()),
-							lead_id = APP.data.current_card.id,
-							success = false;
+							lead_id = APP.data.current_card.id;
+
+						$('copy-lead__info')
+							.removeClass('copy-lead__info_error copy-lead__info_success')
+							.addClass('copy-lead__info_load')
+							.text('Копирование...');
 						
-						if (success) {
-							$('.copy-lead__info')
-								.removeClass('copy-lead__info_load copy-lead__info_error')
-								.addClass('copy-lead__info_success')
-								.text('Готово!');
-						} else {
-							$('.copy-lead__info')
-								.removeClass('copy-lead__info_load copy-lead__info_success')
-								.addClass('copy-lead__info_error')
-								.text('Ошибка');
-						}
-					}
+					
 				});
 
 				$('.js-copy-lead img').remove();
