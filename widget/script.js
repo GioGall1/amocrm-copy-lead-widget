@@ -207,16 +207,39 @@ define(['jquery'], function ($) {
 				$('.copy-lead__button').on('click', function () {
 					if ($(this).hasClass('copy-lead__button_disable')) return;
 
-						let pipeline_id = Number($('.copy-lead [name="select-pipeline"]').val()),
-							status_id = Number($('.copy-lead [name="select-status"]').val()),
-							lead_id = APP.data.current_card.id;
+					let pipeline_id = Number($('.copy-lead [name="select-pipeline"]').val()),
+						status_id = Number($('.copy-lead [name="select-status"]').val()),
+						lead_id = APP.data.current_card.id;
 
-						$('.copy-lead__info')
-							.removeClass('copy-lead__info_error copy-lead__info_success')
-							.addClass('copy-lead__info_load')
-							.text('Копирование...');
-						
-					
+					$('.copy-lead__info')
+						.removeClass('copy-lead__info_error copy-lead__info_success')
+						.addClass('copy-lead__info_load')
+						.text('Копирование...');
+
+					let originalLead = null;
+
+					getLead(lead_id)
+						.then(lead => {
+							originalLead = lead;
+							return createLeadCopy(lead, pipeline_id, status_id);
+						})
+						.then(newLeadId => {
+							if (originalLead._embedded?.contacts?.length) {
+								return linkContacts(newLeadId, originalLead._embedded.contacts);
+							}
+						})
+						.then(() => {
+							$('.copy-lead__info')
+								.removeClass('copy-lead__info_load')
+								.addClass('copy-lead__info_success')
+								.text('Копия сделки создана!');
+						})
+						.catch(() => {
+							$('.copy-lead__info')
+								.removeClass('copy-lead__info_load')
+								.addClass('copy-lead__info_error')
+								.text('Ошибка при копировании');
+						});
 				});
 
 				function getLead(lead_id) {
@@ -231,6 +254,53 @@ define(['jquery'], function ($) {
 							error: function(xhr) {
 								reject(xhr);
 							}
+						});
+					});
+				}
+
+				function createLeadCopy(lead, pipeline_id, status_id) {
+					return new Promise((resolve, reject) => {
+
+						const body = [{
+							name: lead.name,
+							price: lead.price,
+							status_id: status_id,
+							pipeline_id: pipeline_id,
+							tags: lead._embedded?.tags || [],
+							custom_fields_values: lead.custom_fields_values || []
+						}];
+
+						$.ajax({
+							method: 'POST',
+							url: '/api/v4/leads',
+							contentType: 'application/json',
+							data: JSON.stringify(body),
+							success: function(res) {
+								const newLeadId = res._embedded.leads[0].id;
+								resolve(newLeadId);
+							},
+							error: function(xhr) {
+								reject(xhr);
+							}
+						});
+					});
+				}
+
+				function linkContacts(newLeadId, contacts) {
+					return new Promise((resolve, reject) => {
+
+						const data = contacts.map(contact => ({
+							to_entity_id: contact.id,
+							to_entity_type: "contacts"
+						}));
+
+						$.ajax({
+							method: 'POST',
+							url: `/api/v4/leads/${newLeadId}/link`,
+							contentType: 'application/json',
+							data: JSON.stringify(data),
+							success: function() { resolve(); },
+							error: function(xhr) { reject(xhr); }
 						});
 					});
 				}
